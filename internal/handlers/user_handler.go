@@ -122,8 +122,8 @@ func (h *UserHandler) Delete(c *gin.Context) {
 }
 
 func parseUintParam(c *gin.Context, param string) (uint, error) {
-	// Parse with native uint bit size to avoid overflow on 32-bit platforms.
-	val, err := strconv.ParseUint(c.Param(param), 10, strconv.IntSize)
+	// Use bit size 32 so the value fits in uint on both 32-bit and 64-bit platforms.
+	val, err := strconv.ParseUint(c.Param(param), 10, 32)
 	if err != nil {
 		return 0, err
 	}
