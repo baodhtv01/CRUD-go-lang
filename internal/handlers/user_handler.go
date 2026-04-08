@@ -122,13 +122,10 @@ func (h *UserHandler) Delete(c *gin.Context) {
 }
 
 func parseUintParam(c *gin.Context, param string) (uint, error) {
-	const maxUint = ^uint(0)
-	val, err := strconv.ParseUint(c.Param(param), 10, 64)
+	// Parse with native uint bit size to avoid overflow on 32-bit platforms.
+	val, err := strconv.ParseUint(c.Param(param), 10, strconv.IntSize)
 	if err != nil {
 		return 0, err
-	}
-	if val > uint64(maxUint) {
-		return 0, errors.New("ID value out of range")
 	}
 	return uint(val), nil
 }
