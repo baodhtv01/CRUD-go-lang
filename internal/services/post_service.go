@@ -57,7 +57,7 @@ func (s *postService) Update(id uint, userID uint, role string, req *models.Upda
 		return nil, errors.New("post not found")
 	}
 
-	if role != "admin" && post.UserID != userID {
+	if role != models.RoleAdmin && post.UserID != userID {
 		return nil, errors.New("forbidden: you can only update your own posts")
 	}
 
@@ -81,7 +81,7 @@ func (s *postService) Delete(id uint, userID uint, role string) error {
 		return errors.New("post not found")
 	}
 
-	if role != "admin" && post.UserID != userID {
+	if role != models.RoleAdmin && post.UserID != userID {
 		return errors.New("forbidden: you can only delete your own posts")
 	}
 

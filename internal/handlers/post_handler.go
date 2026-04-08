@@ -48,7 +48,11 @@ func (h *PostHandler) GetByID(c *gin.Context) {
 }
 
 func (h *PostHandler) Create(c *gin.Context) {
-	userID, _ := c.Get("userID")
+	callerID, _, err := getCallerContext(c)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "context error", err.Error())
+		return
+	}
 
 	var req models.CreatePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -56,7 +60,7 @@ func (h *PostHandler) Create(c *gin.Context) {
 		return
 	}
 
-	post, err := h.postService.Create(userID.(uint), &req)
+	post, err := h.postService.Create(callerID, &req)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "failed to create post", err.Error())
 		return
@@ -72,8 +76,11 @@ func (h *PostHandler) Update(c *gin.Context) {
 		return
 	}
 
-	userID, _ := c.Get("userID")
-	role, _ := c.Get("role")
+	callerID, role, err := getCallerContext(c)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "context error", err.Error())
+		return
+	}
 
 	var req models.UpdatePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -81,7 +88,7 @@ func (h *PostHandler) Update(c *gin.Context) {
 		return
 	}
 
-	post, err := h.postService.Update(id, userID.(uint), role.(string), &req)
+	post, err := h.postService.Update(id, callerID, role, &req)
 	if err != nil {
 		statusCode := http.StatusBadRequest
 		if err.Error() == "post not found" {
@@ -103,10 +110,13 @@ func (h *PostHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	userID, _ := c.Get("userID")
-	role, _ := c.Get("role")
+	callerID, role, err := getCallerContext(c)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "context error", err.Error())
+		return
+	}
 
-	if err := h.postService.Delete(id, userID.(uint), role.(string)); err != nil {
+	if err := h.postService.Delete(id, callerID, role); err != nil {
 		statusCode := http.StatusBadRequest
 		if err.Error() == "post not found" {
 			statusCode = http.StatusNotFound

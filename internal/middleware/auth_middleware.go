@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/baodhtv01/CRUD-go-lang/internal/models"
 	"github.com/baodhtv01/CRUD-go-lang/internal/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -42,7 +43,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
-		if !exists || role != "admin" {
+		if !exists || role != models.RoleAdmin {
 			utils.ErrorResponse(c, http.StatusForbidden, "admin access required", "insufficient permissions")
 			c.Abort()
 			return

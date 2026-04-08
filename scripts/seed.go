@@ -30,7 +30,10 @@ func main() {
 	}
 
 	// Seed admin user
-	adminPassword, _ := utils.HashPassword("admin123")
+	adminPassword, err := utils.HashPassword("admin123")
+	if err != nil {
+		log.Fatalf("failed to hash admin password: %v", err)
+	}
 	admin := models.User{
 		Name:     "Admin User",
 		Email:    "admin@example.com",
@@ -51,7 +54,10 @@ func main() {
 	}
 
 	for i := range users {
-		password, _ := utils.HashPassword("password123")
+		password, err := utils.HashPassword("password123")
+		if err != nil {
+			log.Fatalf("failed to hash password for user %s: %v", users[i].Email, err)
+		}
 		users[i].Password = password
 		if err := db.FirstOrCreate(&users[i], models.User{Email: users[i].Email}).Error; err != nil {
 			log.Printf("failed to create user %s: %v", users[i].Email, err)

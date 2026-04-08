@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -39,9 +40,12 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 	}
 
 	// Non-admin users can only view their own profile
-	callerID, _ := c.Get("userID")
-	role, _ := c.Get("role")
-	if role != "admin" && callerID.(uint) != id {
+	callerID, role, err := getCallerContext(c)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "context error", err.Error())
+		return
+	}
+	if role != models.RoleAdmin && callerID != id {
 		utils.ErrorResponse(c, http.StatusForbidden, "access denied", "you can only view your own profile")
 		return
 	}
@@ -62,9 +66,12 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	callerID, _ := c.Get("userID")
-	role, _ := c.Get("role")
-	if role != "admin" && callerID.(uint) != id {
+	callerID, role, err := getCallerContext(c)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "context error", err.Error())
+		return
+	}
+	if role != models.RoleAdmin && callerID != id {
 		utils.ErrorResponse(c, http.StatusForbidden, "access denied", "you can only update your own profile")
 		return
 	}
@@ -76,7 +83,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 	}
 
 	// Only admins can change roles
-	if role != "admin" {
+	if role != models.RoleAdmin {
 		req.Role = ""
 	}
 
@@ -96,9 +103,12 @@ func (h *UserHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	callerID, _ := c.Get("userID")
-	role, _ := c.Get("role")
-	if role != "admin" && callerID.(uint) != id {
+	callerID, role, err := getCallerContext(c)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "context error", err.Error())
+		return
+	}
+	if role != models.RoleAdmin && callerID != id {
 		utils.ErrorResponse(c, http.StatusForbidden, "access denied", "you can only delete your own account")
 		return
 	}
@@ -112,9 +122,34 @@ func (h *UserHandler) Delete(c *gin.Context) {
 }
 
 func parseUintParam(c *gin.Context, param string) (uint, error) {
+	const maxUint = ^uint(0)
 	val, err := strconv.ParseUint(c.Param(param), 10, 64)
 	if err != nil {
 		return 0, err
 	}
+	if val > uint64(maxUint) {
+		return 0, errors.New("ID value out of range")
+	}
 	return uint(val), nil
+}
+
+// getCallerContext safely retrieves userID and role from Gin context set by AuthMiddleware.
+func getCallerContext(c *gin.Context) (uint, string, error) {
+	rawID, exists := c.Get("userID")
+	if !exists {
+		return 0, "", errors.New("userID not found in context")
+	}
+	callerID, ok := rawID.(uint)
+	if !ok {
+		return 0, "", errors.New("userID has unexpected type in context")
+	}
+	rawRole, exists := c.Get("role")
+	if !exists {
+		return 0, "", errors.New("role not found in context")
+	}
+	role, ok := rawRole.(string)
+	if !ok {
+		return 0, "", errors.New("role has unexpected type in context")
+	}
+	return callerID, role, nil
 }
